@@ -21,6 +21,9 @@
   },
   "homepage": "https://github.com/morrislaptop/push-on-green",
   "dependencies": {
-    "q": "^1.1.0"
+    "lodash": "^2.4.1",
+    "node-notifier": "^4.0.2",
+    "q": "^1.1.0",
+    "request": "^2.47.0"
   }
 }
