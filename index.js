@@ -8,7 +8,7 @@ var p2 = Q.delay(1000);
 var p3 = Q.delay(2000);
 
 function puts(error, stdout, stderr) {
-   sys.puts(stdout)
+   console.log(stdout)
 }
 
 var options = {
