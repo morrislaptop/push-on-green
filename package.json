@@ -1,0 +1,23 @@
+{
+  "name": "wonga-auto-push-when-green",
+  "version": "1.0.0",
+  "description": "Watch Jenkins and auto push when everything is green",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/morrislaptop/push-on-green.git"
+  },
+  "keywords": [
+    "jenkins",
+    "git"
+  ],
+  "author": "Craig Morris",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/morrislaptop/push-on-green/issues"
+  },
+  "homepage": "https://github.com/morrislaptop/push-on-green"
+}
