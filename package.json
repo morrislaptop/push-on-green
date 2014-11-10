@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/morrislaptop/push-on-green/issues"
   },
-  "homepage": "https://github.com/morrislaptop/push-on-green"
+  "homepage": "https://github.com/morrislaptop/push-on-green",
+  "dependencies": {
+    "q": "^1.1.0"
+  }
 }
