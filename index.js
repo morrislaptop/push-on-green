@@ -5,6 +5,8 @@ var _ = require('lodash');
 var request = require('request');
 var exec = require('child_process').exec;
 var notifier = require('node-notifier');
+var winston = require('winston');
+//winston.level = 'debug';
 
 var jobsToCheck = [
     'Deploy to Drupal remote',
@@ -39,8 +41,8 @@ function isJobGreen(jobData) {
  */
 function isJobInProgress(jobData) {
     var jobsToLookAt = 8;
-    var lastJobNumber = jobData.builds[0].number;
-    for (var i = 1; i < jobsToLookAt; i++) {
+    var lastJobNumber = jobData.nextBuildNumber;
+    for (var i = 0; i < jobsToLookAt; i++) {
         // Check sequential job number
         var thisJobNumber = jobData.builds[i].number;
         if (thisJobNumber !== lastJobNumber - 1) {
@@ -74,36 +76,40 @@ function hasJobFailed(jobData) {
 }
 
 function getRegion(build) {
-    var params = build.actions[0].parameters;
-    if (typeof params !== "undefined") {
-        var region = build.actions[0].parameters[1].value;
+    for (var i = 0; i < build.actions.length; i++) {
+        var params = build.actions[i].parameters;
+        if (typeof params !== "undefined") {
+            return params[1].value;
+        }
     }
-    else {
-        var region = build.actions[2].parameters[1].value;
-    }
-    return region;
+    throw new Error('Region not found');
 }
 
-var jobPromises = _.map(jobsToCheck, function (job) {
+function waitForGreenBoard() {
 
-    var deferred = Q.defer();
+    winston.verbose('-------------------');
 
-    (function checkBuildStatus() {
+    var jobPromises = Q.all(_.map(jobsToCheck, function (job) {
+        var jobDeferred = Q.defer();
         var url = 'http://fe.ci.wonga.com:8080/job/' + encodeURIComponent(job) + '/api/json?depth=1';
-        console.log('Checking ' + job);
+        winston.verbose('Checking ' + job);
         request(url, function (err, response, body) {
-            if ( isJobGreen(JSON.parse(body)) ) {
-                deferred.resolve();
-                return;
+            if (isJobGreen(JSON.parse(body))) {
+                jobDeferred.resolve();
             }
-
-            console.log('Waiting for ' + job);
-            setTimeout(checkBuildStatus, 60000);
+            else {
+                winston.info('Waiting for ' + job);
+                jobDeferred.reject();
+            }
         });
-    })();
+        return jobDeferred.promise;
+    }));
+    jobPromises.fail(function () {
+        setTimeout(waitForGreenBoard, 10000);
+    });
 
-    return deferred.promise;
-});
+    return jobPromises;
+}
 
 function puts(error, stdout, stderr) {
    notifier.notify({
@@ -116,7 +122,7 @@ var options = {
    cwd: '/Users/craigmorris/Sites/drupalv3'
 };
 
-Q.all(jobPromises).then(function () {
-   console.log('All Green. Proceeding to push...');
-   exec("git push edconolly ed/master:master", options, puts);
+waitForGreenBoard().then(function () {
+    winston.info('All Green. Proceeding to push...');
+   exec("git checkout ed/master && git pull --rebase && git push edconolly ed/master:master", options, puts);
 });
