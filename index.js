@@ -6,7 +6,15 @@ var notifier = require('node-notifier');
 var program = require('commander');
 var winston = require('winston');
 var argv = require('minimist')(process.argv.slice(2));
-winston.level = argv.v ? 'debug' : 'info';
+
+var logger = new (winston.Logger)({
+    transports: [
+        new (winston.transports.Console)({
+            'timestamp': true,
+            'level': argv.v ? 'debug' : 'info'
+        })
+    ]
+});
 
 program
     .version('0.0.1')
@@ -96,12 +104,12 @@ function getRegion(build) {
 
 function waitForGreenBoard() {
 
-    winston.verbose('-------------------');
+    logger.verbose('-------------------');
 
     var jobPromises = Q.all(_.map(jobsToCheck, function (job) {
         var jobDeferred = Q.defer();
         var url = 'http://fe.ci.wonga.com:8080/job/' + encodeURIComponent(job) + '/api/json?depth=1';
-        winston.verbose('Checking ' + job);
+        logger.verbose('Checking ' + job);
         request(url, function (err, response, body) {
 
             // Parse
@@ -109,8 +117,8 @@ function waitForGreenBoard() {
                 jobData = JSON.parse(body);
             }
             catch (e) {
-                winston.info('Invalid JSON for ' + job);
-                winston.info(body);
+                logger.info('Invalid JSON for ' + job);
+                logger.info(body);
                 jobDeferred.reject();
             }
 
@@ -119,7 +127,7 @@ function waitForGreenBoard() {
                 jobDeferred.resolve();
             }
             else {
-                winston.info('Waiting for ' + job);
+                logger.info('Waiting for ' + job);
                 jobDeferred.reject();
             }
         });
@@ -144,7 +152,7 @@ var options = {
 };
 
 waitForGreenBoard().then(function () {
-    winston.info('All Green. Proceeding to push...');
+    logger.info('All Green. Proceeding to push...');
     var branch = argv.b || 'ed/master';
     var remote = argv.r || 'edconolly';
     exec("git checkout " + branch + " && git pull --rebase && git push " + remote + " " + branch + ":master", options, puts);
