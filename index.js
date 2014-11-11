@@ -1,12 +1,21 @@
-console.log('Hello World');
-
 var Q = require('q');
 var _ = require('lodash');
 var request = require('request');
 var exec = require('child_process').exec;
 var notifier = require('node-notifier');
+var program = require('commander');
 var winston = require('winston');
-//winston.level = 'debug';
+var argv = require('minimist')(process.argv.slice(2));
+winston.level = argv.v ? 'debug' : 'info';
+
+program
+    .version('0.0.1')
+    .option('-v', 'Verbose debugging')
+    .option('-w', 'Wait this seconds between checks (default 60)')
+    .option('-d', 'Directory of drupalv3')
+    .option('-b', 'Branch to push (default ed/master)')
+    .option('-r', 'Name of remote (default edconolly)')
+    .parse(process.argv);
 
 var jobsToCheck = [
     'Deploy to Drupal remote',
@@ -105,7 +114,7 @@ function waitForGreenBoard() {
         return jobDeferred.promise;
     }));
     jobPromises.fail(function () {
-        setTimeout(waitForGreenBoard, 10000);
+        setTimeout(waitForGreenBoard, argv.w ? argv.w * 1000 : 60000);
     });
 
     return jobPromises;
@@ -119,10 +128,12 @@ function puts(error, stdout, stderr) {
 }
 
 var options = {
-   cwd: '/Users/craigmorris/Sites/drupalv3'
+   cwd: argv.d || '/Users/craigmorris/Sites/drupalv3'
 };
 
 waitForGreenBoard().then(function () {
     winston.info('All Green. Proceeding to push...');
-   exec("git checkout ed/master && git pull --rebase && git push edconolly ed/master:master", options, puts);
+    var branch = argv.b || 'ed/master';
+    var remote = argv.r || 'edconolly';
+    exec("git checkout " + branch + " && git pull --rebase && git push " + remote + " " + branch + ":master", options, puts);
 });
