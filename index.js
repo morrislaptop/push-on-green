@@ -103,7 +103,19 @@ function waitForGreenBoard() {
         var url = 'http://fe.ci.wonga.com:8080/job/' + encodeURIComponent(job) + '/api/json?depth=1';
         winston.verbose('Checking ' + job);
         request(url, function (err, response, body) {
-            if (isJobGreen(JSON.parse(body))) {
+
+            // Parse
+            try {
+                jobData = JSON.parse(body);
+            }
+            catch (e) {
+                winston.info('Invalid JSON for ' + job);
+                winston.info(body);
+                jobDeferred.reject();
+            }
+
+            // Process
+            if (isJobGreen(jobData)) {
                 jobDeferred.resolve();
             }
             else {
