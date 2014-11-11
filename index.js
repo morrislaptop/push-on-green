@@ -114,12 +114,17 @@ function waitForGreenBoard() {
 
             // Parse
             try {
-                jobData = JSON.parse(body);
+                var jobData = JSON.parse(body);
             }
             catch (e) {
                 logger.info('Invalid JSON for ' + job);
-                logger.info(body);
+                logger.info({
+                    err: err,
+                    response: response,
+                    body: body
+                });
                 jobDeferred.reject();
+                return;
             }
 
             // Process
@@ -130,6 +135,7 @@ function waitForGreenBoard() {
                 logger.info('Waiting for ' + job);
                 jobDeferred.reject();
             }
+
         });
         return jobDeferred.promise;
     }));
